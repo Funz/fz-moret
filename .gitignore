@@ -1,0 +1,37 @@
+# fz temporary files
+.fz/tmp/
+*.fz_hash
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Results and output directories
+*_results/
+compiled_*/
+moret_results/
+
+# Temporary template files
+godiva_template.m5
+
+# MORET output files
+*.listing
+*.ps
+*.out.xml
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

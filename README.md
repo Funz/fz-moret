@@ -68,6 +68,19 @@ This will return output:
 
 ## Usage
 
+### Example Script
+
+Run the included example script to see how the plugin works:
+
+```bash
+python example_usage.py
+```
+
+This will demonstrate:
+- Parsing input files to identify variables
+- Creating parametric templates
+- Compiling input files with specific parameter values
+
 ### Basic Example
 
 ```python
@@ -89,6 +102,30 @@ results = fz.fzr(
 )
 
 print(results)
+```
+
+### Parsing Input Variables
+
+```python
+import fz
+
+# Parse input file to identify variables
+variables = fz.fzi("godiva.m5", "Moret")
+print(variables)
+```
+
+### Compiling Input Files
+
+```python
+import fz
+
+# Compile input file with specific parameter values
+fz.fzc(
+    "godiva.m5",
+    {"radius": 8.5, "u5": 5.0e-02},
+    "Moret",
+    output_dir="compiled"
+)
 ```
 
 ### Model Structure
@@ -114,6 +151,26 @@ fz-moret/
 │   │   ├── Moret.sh                # Calculator script
 │   │   └── Localhost_Moret.json    # Calculator alias
 ├── godiva.m5                        # Sample input file
+├── example_usage.py                 # Example usage script
+├── .gitignore                       # Git ignore patterns
 └── README.md                        # This file
 ```
+
+## Files Description
+
+- **`.fz/models/Moret.json`**: Defines the Moret model including:
+  - Input parsing configuration (variable prefix `$`, formula prefix `@`, comment char `*`)
+  - Output extraction commands for `mean_keff`, `sigma_keff`, `dkeff_pertu`, `sigma_dkeff_pertu`
+
+- **`.fz/calculators/Moret.sh`**: Shell script that:
+  - Accepts a `.m5` file or directory as input
+  - Validates the input is a MORET file
+  - Runs the MORET calculation
+  - Checks for successful output generation
+
+- **`.fz/calculators/Localhost_Moret.json`**: Calculator alias configuration for local execution
+
+- **`godiva.m5`**: Sample MORET input file (GODIVA critical assembly)
+
+- **`example_usage.py`**: Example Python script demonstrating various plugin features
 
