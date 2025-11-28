@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Plugin Structure
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install fz framework and plugin
+      run: |
+        pip install git+https://github.com/Funz/fz.git
+        python -c "import fz; fz.install('Moret')"
+
+    - name: Validate JSON files
+      run: |
+        echo "Validating model JSON files..."
+        for file in .fz/models/*.json; do
+          echo "Checking $file"
+          python -m json.tool "$file" > /dev/null
+        done
+        echo "Validating calculator JSON files..."
+        for file in .fz/calculators/*.json; do
+          echo "Checking $file"
+          python -m json.tool "$file" > /dev/null
+        done
+
+    - name: Check shell script syntax
+      run: |
+        echo "Checking shell script syntax..."
+        for script in .fz/calculators/*.sh; do
+          echo "Checking $script"
+          bash -n "$script"
+        done
+
+    - name: Test variable parsing
+      run: |
+        echo "Testing variable parsing with fzi..."
+        python -c "import fz; vars = fz.fzi('examples/Moret/godiva.m5', 'Moret'); print('Variables found:', vars)"
+
+    - name: Test input compilation
+      run: |
+        echo "Testing input compilation with fzc..."
+        python -c "import fz; fz.fzc('examples/Moret/godiva.m5', {'radius': 8.5}, 'Moret', output_dir='test_compiled')"
+        ls -la test_compiled/
+
+    - name: Run plugin tests
+      run: |
+        python tests/test_plugin.py
+
+  lint:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check script permissions
+      run: |
+        echo "Checking that calculator scripts are executable..."
+        for script in .fz/calculators/*.sh; do
+          if [ -x "$script" ]; then
+            echo "✓ $script is executable"
+          else
+            echo "✗ $script is not executable"
+            exit 1
+          fi
+        done
+
+  docs:
+    name: Verify Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check required files
+      run: |
+        echo "Checking for required documentation files..."
+        test -f README.md && echo "✓ README.md exists" || (echo "✗ README.md missing" && exit 1)
+        test -f LICENSE && echo "✓ LICENSE exists" || (echo "✗ LICENSE missing" && exit 1)
+
+    - name: Check example files
+      run: |
+        echo "Checking for example input files..."
+        test -f examples/Moret/godiva.m5 && echo "✓ Example input exists" || (echo "✗ Example input missing" && exit 1)

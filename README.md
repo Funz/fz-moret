@@ -1,17 +1,21 @@
-# fz-moret
+# fz-Moret
 
-fz Moret model plugin for MORET calculations
+Funz plugin for MORET (Monte Carlo calculations for reactor physics)
 
-## Description
+## Features
 
-This plugin is dedicated to launch MORET calculations from fz (Funz parametric computing framework).
-It supports the following syntax and features:
+This plugin integrates MORET calculations with the Funz parametric computing framework, enabling:
+- Automated parametric studies for criticality safety calculations
+- Variable substitution in MORET input files
+- Formula expressions for derived parameters
+- Automatic extraction of keff and uncertainty results
+- Support for perturbation calculations
 
 ### Input
 
 - **File type supported**: `*.m5`, any other format for resources
 - **Parameter syntax**:
-  - Variable syntax: `$(...)`
+  - Variable syntax: `${...}`
   - Formula syntax: `@{...}`
   - Comment char: `*`
   
@@ -23,7 +27,7 @@ MORET_BEGIN
 ...
 GEOM
   MODU 0
-  TYPE 1 SPHE $(radius~[1,20])
+  TYPE 1 SPHE ${radius~[8.0,9.0]}
   VOLU Ext0 0 1 1 0.0 0.0 0.0
   ENDM
 ENDG
@@ -33,7 +37,7 @@ MATE
   COMP UMET
     CONC
     U234     4.91895E-04
-    U235     $(u5~4.49988E-02)
+    U235     ${u5~4.49988E-02}
     U238     2.49865E-03
   ENDC   
 ENDM
@@ -43,7 +47,7 @@ MORET_END
 ```
 
 This will identify input variables:
-- `radius`, expected to vary inside [1,20]
+- `radius`, expected to vary inside [8.0,9.0]
 - `u5`, expected to vary inside [0,1] (by default), with default value 4.49988E-02
 
 ### Output
@@ -66,22 +70,41 @@ This will return output:
 - `mean_keff` = 0.99612
 - `sigma_keff` = 0.00100
 
+## Installation
+
+### Prerequisites
+
+1. Install the Funz framework:
+   ```bash
+   pip install git+https://github.com/Funz/fz.git
+   ```
+
+2. Install the Moret plugin:
+   ```python
+   import fz
+   fz.install('Moret')
+   ```
+
+3. Install MORET at `/opt/MORET/scripts/moret.py` (or update the path in `.fz/calculators/Moret.sh`)
+
 ## Usage
 
-### Example Script
+### Quick Start
 
-Run the included example script to see how the plugin works:
+Open the included Jupyter notebook to see how the plugin works:
 
 ```bash
-python example_usage.py
+jupyter notebook example_usage.ipynb
 ```
 
-This will demonstrate:
+The notebook demonstrates:
 - Parsing input files to identify variables
 - Creating parametric templates
 - Compiling input files with specific parameter values
+- Running parametric studies
+- Visualizing results
 
-### Basic Example
+### Basic Usage
 
 ```python
 import fz
@@ -94,10 +117,10 @@ input_variables = {
 
 # Run parametric study
 results = fz.fzr(
-    "godiva.m5",
+    "examples/Moret/godiva.m5",
     input_variables,
     "Moret",
-    calculators="Localhost_Moret",
+    calculators="localhost_Moret",
     results_dir="moret_results"
 )
 
@@ -110,7 +133,7 @@ print(results)
 import fz
 
 # Parse input file to identify variables
-variables = fz.fzi("godiva.m5", "Moret")
+variables = fz.fzi("examples/Moret/godiva.m5", "Moret")
 print(variables)
 ```
 
@@ -121,56 +144,116 @@ import fz
 
 # Compile input file with specific parameter values
 fz.fzc(
-    "godiva.m5",
+    "examples/Moret/godiva.m5",
     {"radius": 8.5, "u5": 5.0e-02},
     "Moret",
     output_dir="compiled"
 )
 ```
 
-### Model Structure
-
-The plugin provides:
-- `.fz/models/Moret.json` - Model definition with input/output parsing
-- `.fz/calculators/Moret.sh` - Shell script to run MORET
-- `.fz/calculators/Localhost_Moret.json` - Local calculator configuration
-
-## Installation
-
-This plugin requires MORET to be installed at `/opt/MORET/scripts/moret.py`.
-If your MORET installation is in a different location, update the path in `.fz/calculators/Moret.sh`.
-
-## Repository Structure
+## Directory Structure
 
 ```
-fz-moret/
+fz-Moret/
 ├── .fz/
 │   ├── models/
-│   │   └── Moret.json              # Model definition
-│   ├── calculators/
-│   │   ├── Moret.sh                # Calculator script
-│   │   └── Localhost_Moret.json    # Calculator alias
-├── godiva.m5                        # Sample input file
-├── example_usage.py                 # Example usage script
-├── .gitignore                       # Git ignore patterns
-└── README.md                        # This file
+│   │   └── Moret.json              # Model configuration with syntax rules
+│   └── calculators/
+│       ├── Moret.sh                # Calculator execution script
+│       └── localhost_Moret.json    # Local calculator configuration
+├── examples/
+│   └── Moret/
+│       └── godiva.m5               # Example MORET input file
+├── tests/
+│   └── test_plugin.py              # Test suite
+├── example_usage.ipynb             # Example usage notebook (Jupyter)
+├── .gitignore
+├── LICENSE                         # BSD-3-Clause license
+└── README.md                       # This file
 ```
 
-## Files Description
+## Configuration
 
-- **`.fz/models/Moret.json`**: Defines the Moret model including:
-  - Input parsing configuration (variable prefix `$`, formula prefix `@`, comment char `*`)
-  - Output extraction commands for `mean_keff`, `sigma_keff`, `dkeff_pertu`, `sigma_dkeff_pertu`
+### Model Configuration (`.fz/models/Moret.json`)
 
-- **`.fz/calculators/Moret.sh`**: Shell script that:
-  - Accepts a `.m5` file or directory as input
-  - Validates the input is a MORET file
-  - Runs the MORET calculation
-  - Checks for successful output generation
+Defines the input/output syntax for MORET files:
+- `id`: Model identifier (`Moret`)
+- `varprefix`: Variable prefix character (`$`)
+- `formulaprefix`: Formula prefix character (`@`)
+- `delim`: Delimiter around variables (`{}`)
+- `commentline`: Comment character (`*`)
+- `output`: Shell commands mapping output variable names to extraction methods
 
-- **`.fz/calculators/Localhost_Moret.json`**: Calculator alias configuration for local execution
+**Extracted Output Variables:**
+- `mean_keff`: Mean effective multiplication factor
+- `sigma_keff`: Standard deviation of keff
+- `dkeff_pertu`: Perturbation delta-keff (if PERTU is used)
+- `sigma_dkeff_pertu`: Standard deviation of delta-keff
 
-- **`godiva.m5`**: Sample MORET input file (GODIVA critical assembly)
+### Calculator Configuration (`.fz/calculators/localhost_Moret.json`)
 
-- **`example_usage.py`**: Example Python script demonstrating various plugin features
+Specifies execution method and command mappings:
+- `uri`: Execution protocol (`sh://` for local shell)
+- `models`: Maps model name to execution command
 
+### Remote Execution
+
+To run MORET calculations on a remote server via SSH:
+
+1. Create a new calculator configuration file (e.g., `.fz/calculators/Remote_Moret.json`):
+   ```json
+   {
+       "uri": "ssh://username@hostname",
+       "models": {
+           "Moret": "/path/to/Moret.sh"
+       }
+   }
+   ```
+
+2. Use it in your Funz calls:
+   ```python
+   results = fz.fzr("examples/Moret/godiva.m5", input_variables, "Moret",
+                     calculators="Remote_Moret")
+   ```
+
+## Testing
+
+Run the test suite to validate the plugin:
+
+```bash
+python tests/test_plugin.py
+```
+
+## Customization
+
+To adapt this plugin for your specific needs:
+
+1. **Modify input syntax**: Edit `.fz/models/Moret.json` to change variable/formula prefixes or delimiters
+2. **Add output variables**: Add new extraction commands in the `output` section
+3. **Change MORET path**: Update the MORET installation path in `.fz/calculators/Moret.sh`
+4. **Custom calculator**: Create additional calculator configurations for different execution environments
+
+## Troubleshooting
+
+**Calculator script not executing:**
+- Ensure `.fz/calculators/Moret.sh` is executable: `chmod +x .fz/calculators/Moret.sh`
+- Verify MORET installation path in the script
+
+**Output extraction failing:**
+- Check that MORET produces `.listing` files
+- Verify output extraction commands in `.fz/models/Moret.json`
+- Test commands manually on a sample `.listing` file
+
+**Variables not recognized:**
+- Ensure variable syntax matches the configuration: `${variable_name}`
+- Check that comment character `*` is not interfering with variable definitions
+
+## Related Resources
+
+- [Funz framework](https://github.com/Funz/fz) - Main parametric computing framework
+- [Funz plugins](https://github.com/Funz) - Other available model plugins
+- MORET documentation - Consult your MORET installation for detailed usage
+
+## License
+
+This project is licensed under the BSD 3-Clause License - see the LICENSE file for details.

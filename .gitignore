@@ -1,26 +1,28 @@
-# fz temporary files
-.fz/tmp/
-*.fz_hash
+# Results and temporary files
+results/
+*.out
+*.msg
+*.html
+PID
 
-# Python
+# Python-related files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+venv/
+ENV/
+.venv
 *.egg-info/
 dist/
 build/
 
-# Results and output directories
-*_results/
-compiled_*/
-moret_results/
+# fz framework files
+.fz/tmp/
+*.fz_hash
 
-# Temporary template files
-godiva_template.m5
-
-# MORET output files
+# MORET-specific output files
 *.listing
 *.ps
 *.out.xml
@@ -35,3 +37,14 @@ godiva_template.m5
 # OS files
 .DS_Store
 Thumbs.db
+
+# Test and build artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project-specific temporary files
+*_results/
+compiled*/
+moret_results/
+Moret/
